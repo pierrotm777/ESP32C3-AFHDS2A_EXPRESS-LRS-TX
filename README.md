@@ -11,11 +11,6 @@ The project also receives and decodes AFHDS2A telemetry from the receiver.
 Telemetry can be inspected from the serial console with the `tlog` command and selected information can be displayed on the integrated OLED or an [Telemetry Viewer]() Android application .  
 
 > [!NOTE]  
-The original version of [Telemetry Viewer](https://github.com/CrazyDude1994/android-taranis-smartport-telemetry) was created by CrazyDude1994.  
-This project is based on a [Telemetry Viewer](https://github.com/RomanLut/android-taranis-smartport-telemetry) fork by Romanlut (v1.6.3) that includes several options as well as fixes.  
-
-
-> [!NOTE]  
 I took the opportunity to update adapt Romanlut's version for AFHDS2A telemetry.  
 Telemetry Viewer – key changes
 Fork based on Android Taranis SmartPort Telemetry.
@@ -72,6 +67,7 @@ Current implementation:
 - Default PPM timeout: 100 ms
 - ESP32_PPM library currently reads up to 8 physical PPM channels
 - AFHDS2A itself still supports channels 1 to 14
+- ESPRESS LRS itself still supports channels 1 to 16
 - Internal `sweep` mode can exercise all 14 channels without a PPM source
 
 ### Motor safety
@@ -291,17 +287,28 @@ If the radio does not answer correctly, the firmware reports an A7105 error and 
 
 ---
 
+## Rx Nano ELRS Connection
+
+The project use a Rx Nano receiver used as Tx ELRS transmitter.  
+| ELRS function | ESP32-C3 |
+|---|---:|
+| RX | GPIO2 |
+| TX | GPIO9 |
+
+
 ## Complete ESP32-C3 Pin Assignment
 
 | Function | GPIO | Notes |
 |---|---:|---|
-| PPM input | GPIO1 | RC channel input |
+| PPM input | GPIO | RC channel input |
+| ELRS RX | GPIO2 | RX serial |
 | Status LED | GPIO3 | RF/bind status |
 | A7105 SCK | GPIO4 | 3-wire SPI |
 | OLED / PCF SDA | GPIO5 | shared I2C |
 | OLED / PCF SCL | GPIO6 | shared I2C |
 | A7105 CSN | GPIO7 | chip select |
 | A7105 SDIO | GPIO8 | bidirectional data |
+| ELRS RX | GPIO9 | TX serial |
 | Bind button | GPIO10 | active LOW |
 | Motor safety | GPIO0 | active LOW, forces CH3 to 1000 µs |
 
@@ -314,7 +321,7 @@ The firmware includes two RCUL X-Any bridges using `RcTxSerial`.
 ### XANY1
 
 - mode: **SW8**
-- default AFHDS2A channel: **CH5**
+- default channel: **CH5**
 - eight ON/OFF bits
 - two repetitions
 - can receive its eight physical switch inputs from a PCF8574/PCF8574A
@@ -322,7 +329,7 @@ The firmware includes two RCUL X-Any bridges using `RcTxSerial`.
 ### XANY2
 
 - mode: **SW8 + PROP**
-- default AFHDS2A channel: **CH6**
+- default channel: **CH6**
 - eight ON/OFF bits
 - one proportional byte
 - two repetitions
@@ -389,7 +396,7 @@ pcf scan
 
 ---
 
-## RF Timing
+## RF A7105 Timing
 
 Accurate timing is important for the AFHDS2A protocol.
 
@@ -549,9 +556,9 @@ mpm_afh
 ```
 
 Persistent settings include, depending on the firmware version:
-
-- transmitter ID
-- receiver/bind state
+- HF mode, AFHDS2A or ELRS
+- transmitter ID (AHFDS2A only)
+- receiver/bind state (AHFDS2A only)
 - PPM polarity
 - telemetry RX ON/OFF
 - OLED ON/OFF
@@ -568,7 +575,7 @@ This allows normal operating settings to survive a reboot.
 
 A simple first bench test can be performed as follows.
 
-1. Connect the A7105 module.
+1. Connect the A7105 or ELRS module .
 2. Connect the PPM source to GPIO1.
 3. Connect the receiver with servos or a safe test load.
 4. Open the serial terminal at 115200 baud.
@@ -610,14 +617,14 @@ The goal is to allow the ESP32-C3 transmitter module to connect directly to an *
 The intended data path is:
 
 ```text
-FlySky sensors
+FlySky/ELRS sensors
       |
       v
-FlySky FS-iA10B
+FlySky/ELRS PWM receiver (FS-iA6B or ELRS pWM)
       |
-      | AFHDS2A telemetry
+      | AFHDS2A/ELRS telemetry
       v
-A7105 + ESP32-C3
+A7105/ELRS + ESP32-C3
       |
       | Bluetooth Low Energy
       v
@@ -636,7 +643,7 @@ Planned phone-side presentation includes values such as:
 - model battery voltage;
 - receiver voltage;
 - current and consumed capacity;
-- RPM;
+- RPM (ELRS only);
 - temperatures;
 - RSSI / link quality;
 - GPS latitude and longitude;
@@ -653,7 +660,7 @@ The BLE work is intentionally kept separate from the stable AFHDS2A transmitter 
 ## Source File Structure
 
 ```text
-AF2A_C3.ino
+ESP32_C3_BTLE_RFMODE_CHOICE.ino
     Main ESP32-C3 application
     PPM input
     Preferences
@@ -704,6 +711,8 @@ The project currently uses:
 - **U8g2**
 - **elapsedMillis**
 - **RCUL / RcTxSerial** for XANY support
+- **ESP32_PPM** for output PPM with XANY support
+- **RculCrsfSerial** with XANY support
 
 ESP32 core components used directly include:
 
@@ -752,8 +761,10 @@ The project is provided for experimental and development use. The user remains r
 ---
 
 ## Credits
-
-This project contains and adapts AFHDS2A/A7105 protocol work from the **Multiprotocol (MPM)** project.
+> [!NOTE]  
+This project contains and adapts AFHDS2A/A7105 protocol work from the **Multiprotocol (MPM)** project.  
+The original version of [Telemetry Viewer](https://github.com/CrazyDude1994/android-taranis-smartport-telemetry) was created by CrazyDude1994.  
+This project is based on a [Telemetry Viewer](https://github.com/RomanLut/android-taranis-smartport-telemetry) fork by Romanlut (v1.6.3) that includes several options as well as fixes.  
 
 The original source files retain their upstream copyright and GNU GPL notices.
 
@@ -781,9 +792,10 @@ The project is under active development.
 Current focus:
 
 1. stable AFHDS2A transmission on ESP32-C3;
-2. reliable telemetry reception from the FlySky FS-iA10B;
-3. safe PPM/failsafe operation;
-4. XANY/physical switch integration;
-5. Bluetooth LE telemetry forwarding to an Android phone.
+1. CRSF work in progress;
+1. reliable telemetry reception from the FlySky FS-iA10B;
+1. safe PPM/failsafe operation;
+1. XANY/physical switch integration;
+1. Bluetooth LE telemetry forwarding to an Android phone.
 
 Feedback, telemetry captures and hardware test results are useful for further development.
