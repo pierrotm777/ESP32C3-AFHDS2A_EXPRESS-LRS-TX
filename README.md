@@ -3,16 +3,37 @@ Standalone FlySky AFHDS2A transmitter module for ESP32-C3, based on the DIY-Mult
 
 ## Overview
 
-**AF2A_C3** is an experimental FlySky **AFHDS2A transmitter** built around an **ESP32-C3 Super Mini with OLED** and an **A7105 2.4 GHz RF transceiver**.
+**AF2A_C3** is an experimental FlySky **AFHDS2A transmitter** built around an **ESP32-C3 Super Mini with OLED** and an **A7105 2.4 GHz RF transceiver**.  
+The project reuses the proven AFHDS2A/A7105 protocol logic from the [Multiprotocol (MPM)](https://github.com/pascallanger/diy-multiprotocol-tx-module) project and adapts it to run directly on an ESP32-C3.  
+Its main purpose is to take a standard **PPM signal from an RC transmitter**, convert the channels to the MPM internal format, and transmit them over the **FlySky AFHDS2A** protocol to a compatible receiver.  
+The current development and test receiver is a **FlySky FS-iA6B** or a **FlySky FS-iA10B**.  
+The project also receives and decodes AFHDS2A telemetry from the receiver.  
+Telemetry can be inspected from the serial console with the `tlog` command and selected information can be displayed on the integrated OLED or an [Telemetry Viewer]() Android application .  
 
-The project reuses the proven AFHDS2A/A7105 protocol logic from the **Multiprotocol (MPM)** project and adapts it to run directly on an ESP32-C3.
+> [!NOTE]  
+The original version of [Telemetry Viewer](https://github.com/CrazyDude1994/android-taranis-smartport-telemetry) was created by CrazyDude1994.  
+This project is based on a [Telemetry Viewer](https://github.com/RomanLut/android-taranis-smartport-telemetry) fork by Romanlut (v1.6.3) that includes several options as well as fixes.  
 
-Its main purpose is to take a standard **PPM signal from an RC transmitter**, convert the channels to the MPM internal format, and transmit them over the **FlySky AFHDS2A** protocol to a compatible receiver.
 
-The current development and test receiver is a **FlySky FS-iA10B**.
+> [!NOTE]  
+I took the opportunity to update adapt Romanlut's version for AFHDS2A telemetry.  
+Telemetry Viewer – key changes
+Fork based on Android Taranis SmartPort Telemetry.
+• Updated for Android 14.
+• Modernized build setup: Gradle 8.7, AGP 8.5.2, Kotlin 1.9.24, Android SDK 34.
+• Retained Google Maps / GPS support.
+• Retained UVC camera support using UVCAndroid backend 1.0.13.
+• Added FlySky AFHDS2A support.
+• AFHDS2A telemetry reception via USB and Bluetooth LE.
+• Support for MULTI frames 0x06 and 0x0C.
+• Added RC channel forwarding via MULTI frame 0x0D.
+• Display and update of channels CH1 through CH8.
+• Decoding of key AFHDS2A data: voltages, current, capacity, RSSI, LQ, SNR, GPS, altitude, speed, vario, and attitude (when provided).
+• Google Maps API key is now loaded from `local.properties` or an environment variable, rather than being hardcoded in the source.  
+Todo:  
+AFHDS2A temperature, RPM, and pressure data still need to be added to the Android interface.
 
-The project also receives and decodes AFHDS2A telemetry from the receiver. Telemetry can be inspected from the serial console with the `tlog` command and selected information can be displayed on the integrated OLED.
-
+Base version validated: v16.
 ---
 
 ## Main Features
