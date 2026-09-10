@@ -1,12 +1,12 @@
-# AF2A_C3 — FlySky AFHDS2A Transmitter for ESP32-C3 + A7105
-Standalone FlySky AFHDS2A transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
+# AF2A_C3 — FlySky AFHDS2A / EspressLRS Transmitter for ESP32-C3 + (A7105 or Rx ELRS)
+Standalone FlySky AFHDS2A / EspressLRS transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
 
 ## Overview
 
-**AF2A_C3** is an experimental FlySky **AFHDS2A transmitter** built around an **ESP32-C3 Super Mini with OLED** and an **A7105 2.4 GHz RF transceiver**.  
+**AF2A_C3** is an experimental FlySky **AFHDS2A / EspressLRS transmitter** built around an **ESP32-C3 Super Mini with OLED** and an **A7105 or ELRS 2.4 GHz RF transceiver**.  
 The project reuses the proven AFHDS2A/A7105 protocol logic from the [Multiprotocol (MPM)](https://github.com/pascallanger/diy-multiprotocol-tx-module) project and adapts it to run directly on an ESP32-C3.  
 Its main purpose is to take a standard **PPM signal from an RC transmitter**, convert the channels to the MPM internal format, and transmit them over the **FlySky AFHDS2A** protocol to a compatible receiver.  
-The current development and test receiver is a **FlySky FS-iA6B** or a **FlySky FS-iA10B**.  
+The current development and test receiver is a **FlySky FS-iA6B** or a **FlySky FS-iA10B** or a **Rx ELRS PWM** receiver.  
 The project also receives and decodes AFHDS2A telemetry from the receiver.  
 Telemetry can be inspected from the serial console with the `tlog` command and selected information can be displayed on the integrated OLED or an [Telemetry Viewer]() Android application .  
 
@@ -52,6 +52,12 @@ Base version validated: v16.
 - 16-channel frequency hopping table
 - High-resolution ESP32 RF scheduler using `esp_timer`
 - RF timing diagnostics
+
+### Express LRS transmitter
+- ExpressLRS **CRSF** protocol  
+- Express Rx as Transmitter (Need a **Tx ELRS** firmware)  
+- Based on the CapnBry library
+- [RculCrsfSerial](https://github.com/pierrotm777/MyArduinoLibraries/tree/main/Rcul_Modded_Libs/RculCrsfSerial), 16-channel library channel array (Fork from [CapnBry library](https://github.com/CapnBry/CRServoF))  
 
 ### PPM input
 
