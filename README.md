@@ -1,5 +1,29 @@
-# AF2A_C3 — FlySky AFHDS2A / EspressLRS Transmitter for ESP32-C3 + (A7105 or Rx ELRS)
-Standalone FlySky AFHDS2A / EspressLRS transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
+# AF2A_C3 — DUAL RF AFHDS2A + CRSF / ExpressLRS
+
+> **Current project scope:** one ESP32-C3, two selectable RF backends: **AFHDS2A via A7105 / XL7105-D03B** or **CRSF via an external ExpressLRS TX module**. Only one RF backend is active at a time.
+
+# AF2A_C3 — FlySky AFHDS2A Transmitter for ESP32-C3 + A7105
+Standalone FlySky AFHDS2A transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
+
+> [!IMPORTANT]  
+> **Dual-RF extension:** the current development branch can now use either the original **AFHDS2A / A7105** RF backend or an external **ExpressLRS transmitter module driven by CRSF**.  
+> The ESP32-C3 does **not** implement the ExpressLRS RF protocol itself. In ELRS mode it sends and receives **CRSF serial frames** to/from a separate ELRS-capable RF module.  
+> Only one RF backend is active at a time.
+
+Current dual-RF architecture:
+
+```text
+PPM / SWEEP / XANY
+        |
+        v
+     ESP32-C3
+       |   \
+       |    \ UART CRSF
+       |     \
+       |      +--> external ELRS TX module --> ExpressLRS receiver
+       |
+       +--> SPI --> A7105 / XL7105-D03B --> AFHDS2A receiver
+```
 
 ## Overview
 
@@ -48,12 +72,65 @@ Base version validated: v16.
 - High-resolution ESP32 RF scheduler using `esp_timer`
 - RF timing diagnostics
 
-### Express LRS transmitter
-- ExpressLRS **CRSF** protocol  
+### ExpressLRS / CRSF transmitter backend
+
+The firmware also contains a second RF backend for **ExpressLRS** operation.
+
+The ESP32-C3 side uses **CRSF** only. The actual ExpressLRS over-the-air modulation and RF transmission are handled by a separate ELRS-capable transmitter module.
+
+Current implementation:
+
+- selectable **AFHDS2A** or **ELRS/CRSF** RF backend;
+- RF backend selection stored in ESP32 Preferences;
+- change of RF backend followed by a clean ESP32 restart;
+- same internal `Channel_data[16]` source used by both RF backends;
+- PPM, SWEEP and XANY therefore feed AFHDS2A and CRSF from the same channel data;
+- CRSF `RC_CHANNELS_PACKED` frame type `0x16`;
+- 16 CRSF channels packed as 11-bit values;
+- current RC frame rate: approximately **250 Hz**;
+- current UART speed: **400000 baud**;
+- separate UART TX and RX wires;
+- CRSF TX on **GPIO9**;
+- CRSF RX on **GPIO2**;
+- AFHDS2A remains the default RF backend on a fresh configuration.
+
+The target architecture is:
+
+```text
+ESP32-C3 GPIO9 (CRSF TX) ---> ELRS module RX
+ESP32-C3 GPIO2 (CRSF RX) <--- ELRS module TX
+ESP32-C3 GND              ---- ELRS module GND
+```
+
+- ExpressLRS **CRSF** protocol
 - Express Rx as Transmitter (Need a **Tx ELRS** firmware)  
 - Based on the CapnBry library
 - [RculCrsfSerial](https://github.com/pierrotm777/MyArduinoLibraries/tree/main/Rcul_Modded_Libs/RculCrsfSerial), 16-channel library channel array (Fork from [CapnBry library](https://github.com/CapnBry/CRServoF))  
 
+The power input of the external ELRS module must follow the requirements of the exact module used. Do not assume that every ELRS receiver/module can be powered directly from 3.3 V.
+
+RF backend commands:
+
+```text
+rf
+rf ds2a
+rf elrs
+```
+
+Accepted compatibility aliases may also include:
+
+```text
+rf afhds2a
+rf af2a
+rf crsf
+```
+
+`rf` without an argument displays the currently selected backend.
+
+> [!NOTE]  
+> The external ELRS hardware must support being used/programmed as a transmitter and must expose a suitable CRSF UART interface. The first hardware target is a small ELRS/Nano-class module reprogrammed for TX operation.
+
+---
 ### PPM input
 
 The normal control source is a PPM stream connected to the ESP32-C3.
@@ -161,11 +238,11 @@ tclear
 
 ---
 
-## Binding
+## Binding (A7105 only)
 
 Binding can be started in two ways.
 
-### Bind button
+### Bind button (A7105 only)
 
 GPIO10 is the bind input and is active LOW.
 
@@ -300,18 +377,34 @@ The project use a Rx Nano receiver used as Tx ELRS transmitter.
 
 | Function | GPIO | Notes |
 |---|---:|---|
-| PPM input | GPIO | RC channel input |
-| ELRS RX | GPIO2 | RX serial |
-| Status LED | GPIO3 | RF/bind status |
+| PPM input | GPIO1 | RC channel input |
+| Status LED | GPIO2 | RF/bind status |
 | A7105 SCK | GPIO4 | 3-wire SPI |
 | OLED / PCF SDA | GPIO5 | shared I2C |
 | OLED / PCF SCL | GPIO6 | shared I2C |
 | A7105 CSN | GPIO7 | chip select |
 | A7105 SDIO | GPIO8 | bidirectional data |
-| ELRS RX | GPIO9 | TX serial |
 | Bind button | GPIO10 | active LOW |
 | Motor safety | GPIO0 | active LOW, forces CH3 to 1000 µs |
+| CRSF RX from ELRS module | GPIO3 | UART RX, ELRS backend |
+| CRSF TX to ELRS module | GPIO9 | UART TX, ELRS backend |
+The current dual-RF PCB therefore keeps the A7105 SPI bus and the CRSF UART physically separate. The A7105 and ELRS backends are not intended to transmit simultaneously.
 
+Reference ESP32-C3 assignment used by the dual-RF firmware:
+
+```text
+GPIO0   Motor safety
+GPIO1   PPM input
+GPIO2   Status LED
+GPIO3   CRSF RX
+GPIO4   A7105 SCK
+GPIO5   I2C SDA
+GPIO6   I2C SCL
+GPIO7   A7105 CSN
+GPIO8   A7105 SDIO
+GPIO9   CRSF TX
+GPIO10  Bind button
+```
 ---
 
 ## XANY / RCUL Support
@@ -396,7 +489,7 @@ pcf scan
 
 ---
 
-## RF A7105 Timing
+## RF Timing
 
 Accurate timing is important for the AFHDS2A protocol.
 
@@ -491,6 +584,13 @@ Default serial speed:
 h                 Configuration help
 hf                Full help including diagnostics
 
+rf                Show selected RF backend
+rf ds2a           Select AFHDS2A / A7105 and restart
+rf elrs           Select ExpressLRS / CRSF and restart
+
+btsimu            Show BLE telemetry simulator state
+btsimu on         Enable BLE telemetry simulator
+btsimu off        Disable BLE telemetry simulator
 id                Display TX/RX IDs
 
 txid              Display saved TX ID
@@ -531,6 +631,16 @@ pcf               Show PCF8574 status
 pcf scan          Scan the I2C bus for PCF8574(A)
 ```
 
+### RF-specific console help
+
+The console help is separated according to the active RF backend:
+
+- common commands are always shown;
+- AFHDS2A/A7105-only commands are shown when the DS2A backend is active;
+- CRSF/ELRS-only commands are shown when the ELRS backend is active;
+- `h` and `hf` therefore avoid displaying irrelevant commands for the other RF backend.
+
+The backend selector itself remains available from either mode.
 ### Diagnostic commands
 
 ```text
@@ -556,7 +666,6 @@ mpm_afh
 ```
 
 Persistent settings include, depending on the firmware version:
-- HF mode, AFHDS2A or ELRS
 - transmitter ID (AHFDS2A only)
 - receiver/bind state (AHFDS2A only)
 - PPM polarity
@@ -566,6 +675,7 @@ Persistent settings include, depending on the firmware version:
 - XANY2 ON/OFF
 - XANY1 output channel
 - XANY2 output channel
+- selected RF backend: AFHDS2A/DS2A or ELRS/CRSF
 
 This allows normal operating settings to survive a reboot.
 
@@ -575,7 +685,7 @@ This allows normal operating settings to survive a reboot.
 
 A simple first bench test can be performed as follows.
 
-1. Connect the A7105 or ELRS module .
+1. Connect the A7105 or ELRS module.
 2. Connect the PPM source to GPIO1.
 3. Connect the receiver with servos or a safe test load.
 4. Open the serial terminal at 115200 baud.
@@ -610,6 +720,8 @@ tlog
 
 ## Bluetooth LE Telemetry — Work in Progress
 
+> [!IMPORTANT]  
+> **Dual-RF branch update:** BLE telemetry is now also used by the CRSF/ELRS backend. A CRSF telemetry simulator has been validated end-to-end with the Android Telemetry Viewer. The original text below is retained because it documents the earlier AFHDS2A-only development stage.
 A **Bluetooth Low Energy telemetry extension** is being developed separately.
 
 The goal is to allow the ESP32-C3 transmitter module to connect directly to an **Android phone** and forward the telemetry received from the FlySky receiver.
@@ -657,6 +769,45 @@ The BLE work is intentionally kept separate from the stable AFHDS2A transmitter 
 
 ---
 
+## CRSF / ELRS Bluetooth telemetry and simulator
+
+The same `btsimu on/off` command is used for both RF backends. The simulator automatically follows the selected RF mode.
+
+### AFHDS2A mode
+
+When AFHDS2A is selected, the existing MULTI/AFHDS2A telemetry simulation path is retained.
+
+### ELRS / CRSF mode
+
+When ELRS is selected, the ESP32-C3 generates **raw standard CRSF telemetry frames** and forwards them over BLE to the Android application.
+
+The CRSF simulator currently exercises frames such as:
+
+- Link Statistics;
+- Battery Sensor;
+- GPS;
+- Vario;
+- Attitude.
+
+This path has been tested without an ELRS RF module and validates:
+```text
+ESP32-C3
+   |
+   | raw CRSF telemetry
+   v
+Bluetooth LE
+   |
+   v
+Telemetry Viewer Android
+```
+The Android application already contains CRSF decoding/display support. During the CRSF simulator test, the expected CRSF telemetry fields were successfully activated in the interface.
+
+This simulator is useful for separating Android/BLE debugging from the later physical ELRS RF-module tests.
+
+> [!NOTE]  
+> Successful `btsimu` operation validates the ESP32-C3 -> BLE -> Android CRSF path. It does not by itself validate the external ELRS transmitter module, RF link or returned over-the-air telemetry.
+
+---
 ## Source File Structure
 
 ```text
@@ -698,6 +849,20 @@ MPM_ESP32C3_Compat.h
 
 iface_a7105.h
     A7105 register and interface definitions
+
+RF_Config.h
+    RF backend selection/configuration
+    AFHDS2A / CRSF mode definitions
+
+CRSF_Main.h
+CRSF_Main.ino
+    CRSF UART interface
+    RC_CHANNELS_PACKED generation
+    CRSF RX handling
+    ELRS backend processing
+
+BT_LE.h
+    Bluetooth LE declarations used by the telemetry bridge
 ```
 
 ---
@@ -712,7 +877,7 @@ The project currently uses:
 - **elapsedMillis**
 - **RCUL / RcTxSerial** for XANY support
 - **ESP32_PPM** for output PPM with XANY support
-- **RculCrsfSerial** with XANY support
+- **RculCrsfSerial** for CRSF channel transport / CRSF serial handling in the ELRS backend
 
 ESP32 core components used directly include:
 
@@ -721,6 +886,11 @@ ESP32 core components used directly include:
 - `esp_timer`
 - `esp_random`
 
+CRSF library integration notes for the ESP32-C3 build:
+
+- the 16-channel packer must flush bytes while `bitsInScratch >= 8`;
+- RCUL synchronization is asserted only after a valid `RC_CHANNELS_PACKED (0x16)` frame is decoded;
+- ESP32 endian helper macros such as `htobe16`, `be16toh`, `htobe32` and `be32toh` must not be redefined when already supplied by the platform.
 Make sure the required libraries are installed before compiling.
 
 ---
@@ -738,6 +908,13 @@ Where possible:
 - serial output is kept out of the high-priority RF callback;
 - optional features are processed from the normal ESP32 loop whenever possible.
 
+The same philosophy is used for the ELRS extension:
+
+- the existing AFHDS2A/A7105 path is kept intact;
+- CRSF is implemented in separate RF configuration and CRSF source files;
+- the common PPM/SWEEP/XANY channel generation remains upstream of both RF backends;
+- only the selected backend owns the active RF output path;
+- CRSF/ELRS additions should not change the proven AFHDS2A timing behaviour.
 This makes comparison with upstream MPM code easier and reduces the risk of introducing timing regressions.
 
 ---
@@ -755,6 +932,9 @@ Always:
 - verify the receiver failsafe after binding;
 - confirm correct RF range before real operation;
 - check that optional debug or telemetry features do not affect control reliability.
+- verify that only the intended RF backend is active before operating a model;
+- verify the voltage and current requirements of the external ELRS TX module before connection;
+- perform an independent range/failsafe test after changing from AFHDS2A to ELRS or back.																			 
 
 The project is provided for experimental and development use. The user remains responsible for validating the complete installation before operating a real model.
 
@@ -780,6 +960,9 @@ Additional ESP32-C3 integration in this project includes:
 - RCUL XANY support;
 - PCF8574 switch input support;
 - ongoing Bluetooth LE telemetry development.
+- selectable AFHDS2A / CRSF-ELRS RF backend;
+- CRSF RC channel generation using the RCUL/RculCrsfSerial integration;
+- CRSF telemetry simulation and BLE forwarding.
 
 When redistributing modified versions, preserve the original licensing and attribution notices contained in the source files.
 
@@ -799,3 +982,40 @@ Current focus:
 1. Bluetooth LE telemetry forwarding to an Android phone.
 
 Feedback, telemetry captures and hardware test results are useful for further development.
+
+ ---
+## Dual-RF / ELRS Development Status
+
+The AFHDS2A/A7105 backend remains the established and tested RF path.
+
+The CRSF/ExpressLRS extension currently has the following status:
+
+- CRSF firmware integration compiles on ESP32-C3;
+- RF backend selection is persistent and can be changed with `rf ds2a` / `rf elrs`;
+- the CRSF backend uses the same 16-channel internal data as PPM/SWEEP/XANY;
+- `RC_CHANNELS_PACKED (0x16)` generation is implemented;
+- CRSF BLE telemetry simulation is operational;
+- the Android Telemetry Viewer CRSF display path has been validated with `btsimu`;
+- physical external ELRS TX-module wiring and over-the-air RC/telemetry validation remain hardware test steps.
+
+Recommended ELRS hardware-validation sequence:
+
+```text
+1. Select: rf elrs
+2. Verify ESP32-C3 <-> ELRS-module UART wiring and supply
+3. Verify CRSF RC channel transmission
+4. Verify receiver control / channel order / failsafe
+5. Verify returned CRSF telemetry
+6. Verify BLE forwarding of real returned telemetry
+7. Perform range and reliability tests before model use
+```
+
+The intended final system remains:
+
+```text
+                    +--> A7105 / XL7105-D03B --> AFHDS2A
+PPM / XANY --> C3 --|
+                    +--> CRSF UART --> ELRS TX module --> ExpressLRS
+```
+
+Only one RF backend is selected for normal operation at a time.
