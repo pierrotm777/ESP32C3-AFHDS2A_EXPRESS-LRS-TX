@@ -369,7 +369,7 @@ If the radio does not answer correctly, the firmware reports an A7105 error and 
 The project use a Rx Nano receiver used as Tx ELRS transmitter.  
 | ELRS function | ESP32-C3 |
 |---|---:|
-| RX | GPIO2 |
+| RX | GPIO3 |
 | TX | GPIO9 |
 
 
