@@ -377,8 +377,8 @@ The project use a Rx Nano receiver used as Tx ELRS transmitter.
 
 | Function | GPIO | Notes |
 |---|---:|---|
-| PPM input | GPIO1 | Trainer input |
-| PPM input | GPIO2 | RC channel input |
+| PPM input trainer| GPIO1 | Trainer input |
+| PPM input main| GPIO2 | RC channel input |
 | A7105 SCK | GPIO4 | 3-wire SPI |
 | OLED / PCF SDA | GPIO5 | shared I2C |
 | OLED / PCF SCL | GPIO6 | shared I2C |
