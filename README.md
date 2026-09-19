@@ -3,7 +3,7 @@
 > **Current project scope:** one ESP32-C3, two selectable RF backends: **AFHDS2A via A7105 / XL7105-D03B** or **CRSF via an external ExpressLRS TX module**. Only one RF backend is active at a time.
 
 # AF2A_C3 — FlySky AFHDS2A Transmitter for ESP32-C3 + A7105
-Standalone FlySky AFHDS2A transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
+Standalone **FlySky AFHDS2A** / **Express LRS CRSF** transmitter module for ESP32-C3, based on the DIY-Multiprotocol project, with PPM input, telemetry, XANY/RCUL support, OLED display and configurable failsafe.
 
 > [!IMPORTANT]  
 > **Dual-RF extension:** the current development branch can now use either the original **AFHDS2A / A7105** RF backend or an external **ExpressLRS transmitter module driven by CRSF**.  
