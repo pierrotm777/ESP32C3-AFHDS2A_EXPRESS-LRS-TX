@@ -137,7 +137,7 @@ The normal control source is a PPM stream connected to the ESP32-C3.
 
 Current implementation:
 
-- PPM input on GPIO1
+- PPM input on GPIO2
 - Positive or negative PPM polarity
 - Polarity stored in ESP32 Preferences
 - Automatic PPM-loss detection
@@ -377,8 +377,8 @@ The project use a Rx Nano receiver used as Tx ELRS transmitter.
 
 | Function | GPIO | Notes |
 |---|---:|---|
-| PPM input | GPIO1 | RC channel input |
-| Status LED | GPIO2 | RF/bind status |
+| PPM input | GPIO1 | Trainer input |
+| PPM input | GPIO2 | RC channel input |
 | A7105 SCK | GPIO4 | 3-wire SPI |
 | OLED / PCF SDA | GPIO5 | shared I2C |
 | OLED / PCF SCL | GPIO6 | shared I2C |
@@ -388,14 +388,16 @@ The project use a Rx Nano receiver used as Tx ELRS transmitter.
 | Motor safety | GPIO0 | active LOW, forces CH3 to 1000 µs |
 | CRSF RX from ELRS module | GPIO3 | UART RX, ELRS backend |
 | CRSF TX to ELRS module | GPIO9 | UART TX, ELRS backend |
+| Status LED | GPIO20 | RF/bind status |
+| Security Trainer | GPIO21 | On/Off trainer |
 The current dual-RF PCB therefore keeps the A7105 SPI bus and the CRSF UART physically separate. The A7105 and ELRS backends are not intended to transmit simultaneously.
 
 Reference ESP32-C3 assignment used by the dual-RF firmware:
 
 ```text
 GPIO0   Motor safety
-GPIO1   PPM input
-GPIO2   Status LED
+GPIO1   PPM input trainer
+GPIO2   PPM input
 GPIO3   CRSF RX
 GPIO4   A7105 SCK
 GPIO5   I2C SDA
@@ -404,6 +406,9 @@ GPIO7   A7105 CSN
 GPIO8   A7105 SDIO
 GPIO9   CRSF TX
 GPIO10  Bind button
+
+GPIO20  Status LED
+GPIO21  Security trainer
 ```
 ---
 
@@ -686,7 +691,7 @@ This allows normal operating settings to survive a reboot.
 A simple first bench test can be performed as follows.
 
 1. Connect the A7105 or ELRS module.
-2. Connect the PPM source to GPIO1.
+2. Connect the PPM source to GPIO2.
 3. Connect the receiver with servos or a safe test load.
 4. Open the serial terminal at 115200 baud.
 5. Power the receiver in bind mode.
