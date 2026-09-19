@@ -944,7 +944,8 @@ The project is provided for experimental and development use. The user remains r
 > [!NOTE]  
 This project contains and adapts AFHDS2A/A7105 protocol work from the **Multiprotocol (MPM)** project.  
 The original version of [Telemetry Viewer](https://github.com/CrazyDude1994/android-taranis-smartport-telemetry) was created by CrazyDude1994.  
-This project is based on a [Telemetry Viewer](https://github.com/RomanLut/android-taranis-smartport-telemetry) fork by Romanlut (v1.6.3) that includes several options as well as fixes.  
+Another version on a [Telemetry Viewer](https://github.com/RomanLut/android-taranis-smartport-telemetry) fork by Romanlut (v1.6.3) that includes several options as well as fixes.  
+This project is based on [Telemetry Viewer](https://github.com/juricabi/android-taranis-smartport-telemetry) fork by juricabi, no Google Maps (no need Google key), add new mapas type.  
 
 The original source files retain their upstream copyright and GNU GPL notices.
 
